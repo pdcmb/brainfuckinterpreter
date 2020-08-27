@@ -133,8 +133,10 @@ function evaluate(code, input){
         if (command == ".")
             output = output.concat(String.fromCharCode(cells[cellptr]))
         if (command == ","){
-            cells[cellptr] = input.charCodeAt(inputptr)
-            inputptr += 1
+            if(input.charAt(inputptr)){
+                cells[cellptr] = input.charCodeAt(inputptr)
+                inputptr += 1
+            }
         } 
         codeptr += 1
     }
@@ -174,6 +176,7 @@ export default function App() {
   const handleTabChange = (event, newTab) => {
     setTab(newTab);
   }
+
 
   const handleRunClick = (event) => {
       if(code != ''){
@@ -251,7 +254,7 @@ export default function App() {
             </TabPanel>
             <TabPanel value={tab} index={1}>
                 <Box className={classes.options}>
-                    <Tooltip title="Memory will be assigned dynamically">
+                    <Tooltip title="Not working yet">
                     <FormControlLabel
                         control={
                         <Checkbox 
@@ -259,11 +262,12 @@ export default function App() {
                             onChange={(e) => setDynamicMemory(e.target.checked)}
                         />
                         }
-                        label="Dinamic memory"
+                        label="Dynamic memory"
                     />
                     </Tooltip>
                     <TextField 
-                        label="Max cells" 
+                        label="Max cells"
+                        disabled={dynamicMemory} 
                         value={cellsNumber}
                         onChange={(e) => setCellsNumber(e.target.value)}
                         type="number" 
