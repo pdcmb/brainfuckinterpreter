@@ -1,14 +1,22 @@
 import React, { useState, useMemo } from 'react';
-import { Container, TextField, FormControlLabel, Checkbox, Box, Button, TablePagination, 
+import { Container, TextField, FormControlLabel, Checkbox, Box, Button, 
          Tabs, Tab, Table, TableCell, TableRow, TableBody, TableHead, TableContainer,
-         Paper, Tooltip, makeStyles } from '@material-ui/core'
+         Paper, Tooltip, BottomNavigation, BottomNavigationAction,
+         makeStyles, useMediaQuery } from '@material-ui/core'
+import { useTheme } from '@material-ui/core/styles'
 import TabPanel from './TabPanel'
 import UploadButton from './UploadButton'
+import EditIcon from '@material-ui/icons/Edit';
+import InfoIcon from '@material-ui/icons/Info';
+import BuildIcon from '@material-ui/icons/Build';
 
 const styles = makeStyles( theme => ({
     root: {
         display: 'flex',
         height: '100%',
+        [theme.breakpoints.down('sm')]: {
+            flexDirection: 'column',
+          },
     },
     editorPanel: {
         margin: theme.spacing(1),
@@ -17,13 +25,16 @@ const styles = makeStyles( theme => ({
         flex: '3 1 80%',
         '&>*':{
             margin: theme.spacing(1)
-        }
+        },
     },
     sidePanel: {
         margin: theme.spacing(1),
-        display: 'flex',
         flexDirection: 'column',
+        display: 'flex',
         flex: '1 1 20%',
+        [theme.breakpoints.down('sm')]: {
+            display: 'none',
+        },
     },
     buttons:{
         display: 'flex',
@@ -41,8 +52,15 @@ const styles = makeStyles( theme => ({
             width: '100%',
         }
     },
-    table:{
-        maxHeight: 550
+    bottomNavigation:{
+        alignItems: 'center',
+        display: 'none',
+        position: 'fixed',
+        bottom: 0,
+        width: '100%',
+        [theme.breakpoints.down('sm')]: {
+            display: 'flex',
+        },
     }
 
 }))
@@ -164,117 +182,139 @@ function buildbracemap(code){
 }
 
 export default function App() {
-  const classes = styles()
+    const classes = styles()
+    const theme = useTheme();
+    const isSmDevice = useMediaQuery(theme.breakpoints.down('sm'));
 
-  const [code, setCode] = useState('')
-  const [input, setInput] = useState('')
-  const [output, setOutput] = useState('')
-  const [dynamicMemory, setDynamicMemory] = useState(false)
-  const [cellsNumber, setCellsNumber] = useState(30000)
-  const [tab, setTab] = useState(0)
-  
-  const handleTabChange = (event, newTab) => {
-    setTab(newTab);
-  }
-
-
-  const handleRunClick = (event) => {
-      if(code != ''){
-        setCode(cleanup(code));
-        setInput('')
-        setOutput(evaluate(cleanup(code)))
-      }
-  }
-
-  const readFile = (event) => {
-    let file = event.target.files[0];
-    if (file) {
-        const reader = new FileReader()
-        reader.onload = async (e) => { setCode(e.target.result)};
-        reader.readAsText(file)
+    const [code, setCode] = useState('')
+    const [input, setInput] = useState('')
+    const [output, setOutput] = useState('')
+    const [dynamicMemory, setDynamicMemory] = useState(false)
+    const [cellsNumber, setCellsNumber] = useState(30000)
+    const [sideTab, setSideTab] = useState(0)
+    const [renderView, setRenderView] = useState(0)
+    
+    const handleRunClick = (event) => {
+        if(code != ''){
+            setCode(cleanup(code));
+            setInput('')
+            setOutput(evaluate(cleanup(code)))
+        }
     }
-  }
 
-  return (
-    <Container className={classes.root}>
+    const readFile = (event) => {
+        let file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader()
+            reader.onload = async (e) => { setCode(e.target.result)};
+            reader.readAsText(file)
+        }
+    }
+
+    const editorPanel = (
         <Box className={classes.editorPanel}>
-        <TextField 
-            rows={15} 
-            multiline
-            value={code}
-            onChange={(e) => setCode(e.target.value)} 
-            variant="outlined" 
-            helperText="Insert code here"/>
-        <TextField 
-            label="Input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)} 
-            variant="outlined"/>
-        <Box className={classes.buttons}>
-            <Button color="primary" variant="contained" onClick={handleRunClick}>Run</Button>
-            <UploadButton accept="text/*" onChange={readFile} >Upload file</UploadButton>
-        </Box>
-        <TextField
-            label="Output"
-            variant="outlined"
-            rows={8}
-            multiline
-            value={output}
-            InputProps={{
-                readOnly: true,
-            }}
-        />
-        </Box>
-        <Box className={classes.sidePanel}>
-            <Tabs value={tab} onChange={handleTabChange}>
-                    <Tab label="Commands" />
-                    <Tab label="Options" />
-            </Tabs>
-            <TabPanel value={tab} index={0}>
-                <TableContainer className={classes.table} component={Paper}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Character</TableCell>
-                                <TableCell align="center">Meaning</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                        { commands.map( command => {
-                            return (
-                                <TableRow key={command.character}>
-                                    <TableCell component="th" scope="row">{command.character}</TableCell>
-                                    <TableCell align="center">{command.meaning}</TableCell>
-                                </TableRow>
-                            )
-                        })}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-            </TabPanel>
-            <TabPanel value={tab} index={1}>
-                <Box className={classes.options}>
-                    <Tooltip title="Not working yet">
-                    <FormControlLabel
-                        control={
-                        <Checkbox 
-                            checked={dynamicMemory}
-                            onChange={(e) => setDynamicMemory(e.target.checked)}
-                        />
-                        }
-                        label="Dynamic memory"
+            <TextField 
+                rows={isSmDevice ? 7 : 15} 
+                multiline
+                value={code}
+                onChange={(e) => setCode(e.target.value) } 
+                variant="outlined" 
+                helperText="Insert code here"/>
+            <TextField 
+                label="Input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)} 
+                variant="outlined"/>
+            <Box className={classes.buttons}>
+                <Button color="primary" variant="contained" onClick={handleRunClick}>Run</Button>
+                <Button color="primary" variant="contained" onClick={() => setOutput('') }>Clear output</Button>
+                <UploadButton accept="text/*" onChange={readFile} >Upload file</UploadButton>
+            </Box>
+            <TextField
+                label="Output"
+                variant="outlined"
+                rows={isSmDevice ? 5 : 8}
+                multiline
+                value={output}
+                InputProps={{
+                    readOnly: true,
+                }}
+            />
+        </Box>)
+
+    const optionsPanel = (
+        <Box className={classes.options}>
+            <Tooltip title="Not working yet">
+                <FormControlLabel
+                    control={
+                    <Checkbox 
+                        checked={dynamicMemory}
+                        onChange={(e) => setDynamicMemory(e.target.checked)}
                     />
-                    </Tooltip>
-                    <TextField 
-                        label="Max cells"
-                        disabled={dynamicMemory} 
-                        value={cellsNumber}
-                        onChange={(e) => setCellsNumber(e.target.value)}
-                        type="number" 
-                        variant="outlined"/>
-                </Box>
-            </TabPanel>
-        </Box>
-    </Container>
-  )
+                    }
+                    label="Dynamic memory"
+                />
+            </Tooltip>
+            <TextField 
+                label="Max cells"
+                disabled={dynamicMemory} 
+                value={cellsNumber}
+                onChange={(e) => setCellsNumber(e.target.value)}
+                type="number" 
+                variant="outlined"
+            />
+        </Box>)
+
+    const commandsPanel = (
+        <TableContainer component={Paper}>
+            <Table size="small">
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Character</TableCell>
+                        <TableCell align="center">Meaning</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                { commands.map( command => {
+                    return (
+                        <TableRow key={command.character}>
+                            <TableCell component="th" scope="row">{command.character}</TableCell>
+                            <TableCell align="center">{command.meaning}</TableCell>
+                        </TableRow>
+                    )
+                })}
+                </TableBody>
+            </Table>
+        </TableContainer>)
+
+    const views = [editorPanel, commandsPanel, optionsPanel]
+    const mainView = isSmDevice ? views[renderView] : editorPanel 
+
+    return (
+        <Container className={classes.root}>
+            { mainView }  
+            <Box className={classes.sidePanel}>
+                <Tabs value={sideTab} onChange={ (e, newValue ) => { setSideTab(newValue); } }>
+                        <Tab label="Commands" />
+                        <Tab label="Options" />
+                </Tabs>
+                <TabPanel value={sideTab} index={0}>
+                    {commandsPanel}
+                </TabPanel>
+                <TabPanel value={sideTab} index={1}>
+                    {optionsPanel}
+                </TabPanel>
+            </Box>
+            <BottomNavigation 
+                showLabels 
+                className={classes.bottomNavigation}
+                value={renderView}
+                onChange={ (e, newValue ) => { setRenderView(newValue) } }
+                >
+                <BottomNavigationAction label="Editor" icon={<EditIcon />} />
+                <BottomNavigationAction label="Commands table" icon={<InfoIcon />} />
+                <BottomNavigationAction label="Options" icon={<BuildIcon />} />
+            </BottomNavigation>
+        </Container>
+    )
 }
