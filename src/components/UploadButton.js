@@ -9,7 +9,7 @@ const styles = makeStyles(theme => ({
 }))
 
 export default function UploadButton(props) {
-    const {accept, children, onChange, ...rest} = props
+    const {accept, children, color, onChange, ...rest} = props
     const classes = styles()
     return (
         <Fragment>
@@ -23,7 +23,7 @@ export default function UploadButton(props) {
             <label htmlFor="contained-button-file">
                 <Button 
                     variant="contained" 
-                    color="primary" 
+                    color={color}
                     startIcon={<PublishIcon />}
                     component="span">
                     {children}

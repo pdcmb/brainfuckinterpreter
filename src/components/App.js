@@ -1,14 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { Container, TextField, FormControlLabel, Checkbox, Box, Button, 
+import { Container, TextField, FormControlLabel, Checkbox, Box, Button, Switch, Fab,
          Tabs, Tab, Table, TableCell, TableRow, TableBody, TableHead, TableContainer,
-         Paper, Tooltip, BottomNavigation, BottomNavigationAction,
+         Paper, Tooltip, BottomNavigation, BottomNavigationAction, Typography, Slider, Divider,
          makeStyles, useMediaQuery } from '@material-ui/core'
-import { useTheme } from '@material-ui/core/styles'
 import TabPanel from './TabPanel'
 import UploadButton from './UploadButton'
-import EditIcon from '@material-ui/icons/Edit';
-import InfoIcon from '@material-ui/icons/Info';
-import BuildIcon from '@material-ui/icons/Build';
+import EditIcon from '@material-ui/icons/Edit'
+import InfoIcon from '@material-ui/icons/Info'
+import BuildIcon from '@material-ui/icons/Build'
+import PlayArrowIcon from '@material-ui/icons/PlayArrow';
+import { ThemeProvider, createMuiTheme } from '@material-ui/core/styles'
+import CssBaseline from '@material-ui/core/CssBaseline'
+
 
 const styles = makeStyles( theme => ({
     root: {
@@ -16,13 +19,14 @@ const styles = makeStyles( theme => ({
         height: '100%',
         [theme.breakpoints.down('sm')]: {
             flexDirection: 'column',
+            paddingBottom: 64,
           },
     },
     editorPanel: {
         margin: theme.spacing(1),
         display: 'flex',
         flexDirection: 'column',
-        flex: '3 1 80%',
+        flex: '3 1 75%',
         '&>*':{
             margin: theme.spacing(1)
         },
@@ -31,7 +35,7 @@ const styles = makeStyles( theme => ({
         margin: theme.spacing(1),
         flexDirection: 'column',
         display: 'flex',
-        flex: '1 1 20%',
+        flex: '1 1 25%',
         [theme.breakpoints.down('sm')]: {
             display: 'none',
         },
@@ -39,17 +43,28 @@ const styles = makeStyles( theme => ({
     buttons:{
         display: 'flex',
         width: '100%',
+        [theme.breakpoints.down('sm')]: {
+            display: 'none',
+        },
         '&>*':{
             marginRight: theme.spacing(2)
         }
     },
+    fab: {
+        position: 'fixed',
+        display: 'none',
+        bottom: 64,
+        right: 16,
+        [theme.breakpoints.down('sm')]: {
+            display: 'flex',
+            alignItems: 'center',
+        }
+    },
     options:{
-        margin: theme.spacing(1),
         display: 'flex',
         flexDirection: 'column',
         '&>*':{
             margin: theme.spacing(1),
-            width: '100%',
         }
     },
     bottomNavigation:{
@@ -58,6 +73,7 @@ const styles = makeStyles( theme => ({
         position: 'fixed',
         bottom: 0,
         width: '100%',
+        zIndex: theme.zIndex.appBar,
         [theme.breakpoints.down('sm')]: {
             display: 'flex',
         },
@@ -112,11 +128,9 @@ function evaluate(code, input){
     let codeptr = 0
     let inputptr = 0
     let output = ''
-
     while (codeptr < code.length){
 
         let command = code.charAt(codeptr)
-
     
         if (command == ">"){
             cellptr += 1
@@ -175,15 +189,30 @@ function buildbracemap(code){
             bracemap[start] = index
             bracemap[index] = start
         }
-
     }
-
     return bracemap
 }
 
 export default function App() {
+    const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)')
+    const [useDarkTheme, setUseDarkTheme] = useState(prefersDarkMode);
+
+    const theme = useMemo(() =>
+        createMuiTheme({
+            palette: {
+                type: prefersDarkMode || useDarkTheme ? 'dark' : 'light',
+                primary: {
+                    main: '#03a9f4',
+                },
+                secondary: {
+                   main: '#4caf50',
+                }
+            },
+        }),
+        [prefersDarkMode, useDarkTheme],
+      );
+
     const classes = styles()
-    const theme = useTheme();
     const isSmDevice = useMediaQuery(theme.breakpoints.down('sm'));
 
     const [code, setCode] = useState('')
@@ -193,12 +222,14 @@ export default function App() {
     const [cellsNumber, setCellsNumber] = useState(30000)
     const [sideTab, setSideTab] = useState(0)
     const [renderView, setRenderView] = useState(0)
+    const [inputSize, setInputSize] = useState(15)
+    const [outputSize, setOutputSize] = useState(8)
     
     const handleRunClick = (event) => {
         if(code != ''){
             setCode(cleanup(code));
             setInput('')
-            setOutput(evaluate(cleanup(code)))
+            setOutput(evaluate(cleanup(code), input))
         }
     }
 
@@ -214,7 +245,7 @@ export default function App() {
     const editorPanel = (
         <Box className={classes.editorPanel}>
             <TextField 
-                rows={isSmDevice ? 7 : 15} 
+                rows={inputSize} 
                 multiline
                 value={code}
                 onChange={(e) => setCode(e.target.value) } 
@@ -228,18 +259,21 @@ export default function App() {
             <Box className={classes.buttons}>
                 <Button color="primary" variant="contained" onClick={handleRunClick}>Run</Button>
                 <Button color="primary" variant="contained" onClick={() => setOutput('') }>Clear output</Button>
-                <UploadButton accept="text/*" onChange={readFile} >Upload file</UploadButton>
+                <UploadButton color="primary" accept="text/*" onChange={readFile} >Upload file</UploadButton>
             </Box>
             <TextField
                 label="Output"
                 variant="outlined"
-                rows={isSmDevice ? 5 : 8}
+                rows={outputSize}
                 multiline
                 value={output}
                 InputProps={{
                     readOnly: true,
                 }}
             />
+            <Fab color="primary" className={classes.fab}>
+                <PlayArrowIcon />
+            </Fab>
         </Box>)
 
     const optionsPanel = (
@@ -249,6 +283,7 @@ export default function App() {
                     control={
                     <Checkbox 
                         checked={dynamicMemory}
+                        color="primary"
                         onChange={(e) => setDynamicMemory(e.target.checked)}
                     />
                     }
@@ -262,6 +297,40 @@ export default function App() {
                 onChange={(e) => setCellsNumber(e.target.value)}
                 type="number" 
                 variant="outlined"
+            />
+            <Typography variant="h6">Editor options</Typography>
+            <Divider />
+            <FormControlLabel
+                control={
+                <Switch
+                    checked={useDarkTheme}
+                    onChange={(e) => setUseDarkTheme(e.target.checked)}
+                    color="primary"
+                />
+                }
+                label="Use dark theme"
+            />
+            <Typography >Input field size</Typography>
+            <Slider
+                defaultValue={15}
+                valueLabelDisplay="auto"
+                step={1}
+                marks
+                min={5}
+                max={20}
+                value={inputSize}
+                onChange={(e, newValue) => setInputSize(newValue)}
+            />
+            <Typography >Output field size</Typography>
+            <Slider
+                defaultValue={8}
+                marks
+                valueLabelDisplay="auto"
+                step={1}
+                min={2}
+                max={20}
+                value={outputSize}
+                onChange={(e, newValue) => setOutputSize(newValue)}
             />
         </Box>)
 
@@ -291,30 +360,33 @@ export default function App() {
     const mainView = isSmDevice ? views[renderView] : editorPanel 
 
     return (
-        <Container className={classes.root}>
-            { mainView }  
-            <Box className={classes.sidePanel}>
-                <Tabs value={sideTab} onChange={ (e, newValue ) => { setSideTab(newValue); } }>
-                        <Tab label="Commands" />
-                        <Tab label="Options" />
-                </Tabs>
-                <TabPanel value={sideTab} index={0}>
-                    {commandsPanel}
-                </TabPanel>
-                <TabPanel value={sideTab} index={1}>
-                    {optionsPanel}
-                </TabPanel>
-            </Box>
+        <ThemeProvider theme={ theme }>
+            <CssBaseline />
+            <Container className={classes.root}>
+                { mainView }  
+                <Box className={classes.sidePanel}>
+                    <Tabs indicatorColor="primary" value={sideTab} onChange={ (e, newValue ) => { setSideTab(newValue); } }>
+                            <Tab label="Commands" />
+                            <Tab label="Options" />
+                    </Tabs>
+                    <TabPanel value={sideTab} index={0}>
+                        {commandsPanel}
+                    </TabPanel>
+                    <TabPanel value={sideTab} index={1}>
+                        {optionsPanel}
+                    </TabPanel>
+                </Box>
+            </Container>
             <BottomNavigation 
-                showLabels 
-                className={classes.bottomNavigation}
-                value={renderView}
-                onChange={ (e, newValue ) => { setRenderView(newValue) } }
-                >
-                <BottomNavigationAction label="Editor" icon={<EditIcon />} />
-                <BottomNavigationAction label="Commands table" icon={<InfoIcon />} />
-                <BottomNavigationAction label="Options" icon={<BuildIcon />} />
-            </BottomNavigation>
-        </Container>
+                    showLabels 
+                    className={classes.bottomNavigation}
+                    value={renderView}
+                    onChange={ (e, newValue ) => { setRenderView(newValue) } }
+                    >
+                    <BottomNavigationAction label="Editor" icon={<EditIcon />} />
+                    <BottomNavigationAction label="Commands table" icon={<InfoIcon />} />
+                    <BottomNavigationAction label="Options" icon={<BuildIcon />} />
+                </BottomNavigation>
+        </ThemeProvider>
     )
 }
