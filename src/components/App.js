@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Container, TextField, FormControlLabel, Checkbox, Box, Button, Switch, Fab,
-         Tabs, Tab, Table, TableCell, TableRow, TableBody, TableHead, TableContainer,
-         Paper, Tooltip, BottomNavigation, BottomNavigationAction, Typography, Slider, Divider,
+         Tabs, Tab, Tooltip, BottomNavigation, BottomNavigationAction, Typography, Slider, Divider,
          makeStyles, useMediaQuery } from '@material-ui/core'
 import TabPanel from './TabPanel'
 import UploadButton from './UploadButton'
+import CommandsTable from './CommandsTable'
+import InputDialog from './InputDialog'
 import EditIcon from '@material-ui/icons/Edit'
 import InfoIcon from '@material-ui/icons/Info'
 import BuildIcon from '@material-ui/icons/Build'
@@ -19,7 +20,7 @@ const styles = makeStyles( theme => ({
         height: '100%',
         [theme.breakpoints.down('sm')]: {
             flexDirection: 'column',
-            paddingBottom: 64,
+            paddingBottom: theme.spacing(8),
           },
     },
     editorPanel: {
@@ -53,8 +54,8 @@ const styles = makeStyles( theme => ({
     fab: {
         position: 'fixed',
         display: 'none',
-        bottom: 64,
-        right: 16,
+        bottom: theme.spacing(8),
+        right: theme.spacing(2),
         [theme.breakpoints.down('sm')]: {
             display: 'flex',
             alignItems: 'center',
@@ -81,47 +82,15 @@ const styles = makeStyles( theme => ({
 
 }))
 
-const commands = [
-    { 
-        character: '>',
-        meaning: 'Increment the data pointer (to point to the next cell to the right).'
-    },
-    { 
-        character: '<',
-        meaning: 'Decrement the data pointer (to point to the next cell to the left).'
-    },
-    { 
-        character: '+',
-        meaning: 'Increment (increase by one) the byte at the data pointer.'
-    },
-    { 
-        character: '-',
-        meaning: 'Decrement (decrease by one) the byte at the data pointer.'
-    },
-    { 
-        character: '.',
-        meaning: 'Output the byte at the data pointer.'
-    },
-    { 
-        character: ',',
-        meaning: 'Accept one byte of input, storing its value in the byte at the data pointer.'
-    },
-    { 
-        character: '[',
-        meaning: 'If the byte at the data pointer is zero, then instead of moving the instruction pointer forward to the next command, jump it forward to the command after the matching ] command'
-    },
-    { 
-        character: ']',
-        meaning: 'If the byte at the data pointer is nonzero, then instead of moving the instruction pointer forward to the next command, jump it back to the command after the matching [ command.'
-    },
-]
 
 function cleanup(code){
-    return code.match(/[<>+-.,[\]]/g).join("")
+    if(code !== '')
+        return code.match(/[<>+-.,[\]]/g).join("")
+    else return ''
 }
 
 
-function evaluate(code, input){
+function evaluate(code, memorySize, input){
     let bracemap = buildbracemap(code)
     let cells = [0]
     let cellptr = 0
@@ -132,39 +101,41 @@ function evaluate(code, input){
 
         let command = code.charAt(codeptr)
     
-        if (command == ">"){
+        if (command === ">"){
             cellptr += 1
-            if (cellptr >= cells.length)
+            if (memorySize !== -1 && cellptr >= memorySize)
+                cellptr = 0
+            else if(cellptr >= cells.length)
                 cells.push(0)
         }
             
-        if (command == "<"){
+        if (command === "<"){
             if (cellptr <= 0) 
             cellptr = 0 
             else cellptr -= 1
         }
 
-        if (command == "+"){
+        if (command === "+"){
             if (cells[cellptr] < 255)
                 cells[cellptr] += 1
             else cells[cellptr] = 0
         }
         
-        if (command == "-"){
+        if (command === "-"){
             if (cells[cellptr] > 0) 
                 cells[cellptr] -= 1
             else cells[cellptr] = 255
         }
         
-        if (command == "[" && cells[cellptr] == 0){
+        if (command === "[" && cells[cellptr] === 0){
             codeptr = bracemap[codeptr] 
         }
-        if (command == "]" && cells[cellptr] != 0){ 
+        if (command === "]" && cells[cellptr] !== 0){ 
             codeptr = bracemap[codeptr] 
         }
-        if (command == ".")
+        if (command === ".")
             output = output.concat(String.fromCharCode(cells[cellptr]))
-        if (command == ","){
+        if (command === ","){
             if(input.charAt(inputptr)){
                 cells[cellptr] = input.charCodeAt(inputptr)
                 inputptr += 1
@@ -206,8 +177,17 @@ export default function App() {
                 },
                 secondary: {
                    main: '#4caf50',
-                }
+                },
             },
+            overrides: {
+                MuiCssBaseline:{
+                    '@global': {
+                        html: {
+                            overflowY: 'scroll',
+                        },
+                    }
+                },
+            }
         }),
         [prefersDarkMode, useDarkTheme],
       );
@@ -218,26 +198,36 @@ export default function App() {
     const [code, setCode] = useState('')
     const [input, setInput] = useState('')
     const [output, setOutput] = useState('')
-    const [dynamicMemory, setDynamicMemory] = useState(false)
+    const [dynamicMemory, setDynamicMemory] = useState(true)
+    const [promptInput, setPromptInput] = useState(true)
     const [cellsNumber, setCellsNumber] = useState(30000)
     const [sideTab, setSideTab] = useState(0)
     const [renderView, setRenderView] = useState(0)
     const [inputSize, setInputSize] = useState(15)
     const [outputSize, setOutputSize] = useState(8)
+    const [isInputDialogOpen, setIsInputDialogOpen] = useState(false)
     
-    const handleRunClick = (event) => {
-        if(code != ''){
-            setCode(cleanup(code));
-            setInput('')
-            setOutput(evaluate(cleanup(code), input))
+    const run = () => {
+        if(code !== ''){
+            if(promptInput && code.match(/,/g) && (code.match(/,/g).length - input.length) > 0 )
+                setIsInputDialogOpen(true)
+            else setOutput(evaluate(code, dynamicMemory ? -1 : cellsNumber, input))
+            
         }
     }
+
+    useEffect(() => {
+        if(isInputDialogOpen){
+            setIsInputDialogOpen(false)
+            run()
+        }
+    }, [input])
 
     const readFile = (event) => {
         let file = event.target.files[0];
         if (file) {
             const reader = new FileReader()
-            reader.onload = async (e) => { setCode(e.target.result)};
+            reader.onload = async (e) => { setCode(cleanup(e.target.result))};
             reader.readAsText(file)
         }
     }
@@ -248,7 +238,7 @@ export default function App() {
                 rows={inputSize} 
                 multiline
                 value={code}
-                onChange={(e) => setCode(e.target.value) } 
+                onChange={(e) => setCode(cleanup(e.target.value)) } 
                 variant="outlined" 
                 helperText="Insert code here"/>
             <TextField 
@@ -257,9 +247,9 @@ export default function App() {
                 onChange={(e) => setInput(e.target.value)} 
                 variant="outlined"/>
             <Box className={classes.buttons}>
-                <Button color="primary" variant="contained" onClick={handleRunClick}>Run</Button>
-                <Button color="primary" variant="contained" onClick={() => setOutput('') }>Clear output</Button>
-                <UploadButton color="primary" accept="text/*" onChange={readFile} >Upload file</UploadButton>
+                <Button color="primary" variant="outlined" onClick={run}>Run</Button>
+                <Button color="primary" variant="outlined" onClick={() => setOutput('') }>Clear output</Button>
+                <UploadButton color="primary" variant="outlined" accept="text/*" onChange={readFile} >Upload file</UploadButton>
             </Box>
             <TextField
                 label="Output"
@@ -271,25 +261,27 @@ export default function App() {
                     readOnly: true,
                 }}
             />
-            <Fab color="primary" className={classes.fab}>
-                <PlayArrowIcon />
-            </Fab>
+            <Tooltip title="Run" aria-label="run">
+                <Fab color="primary" onClick={run} className={classes.fab}>
+                    <PlayArrowIcon />
+                </Fab>
+            </Tooltip>
         </Box>)
 
     const optionsPanel = (
         <Box className={classes.options}>
-            <Tooltip title="Not working yet">
-                <FormControlLabel
-                    control={
-                    <Checkbox 
-                        checked={dynamicMemory}
-                        color="primary"
-                        onChange={(e) => setDynamicMemory(e.target.checked)}
-                    />
-                    }
-                    label="Dynamic memory"
+            <Typography variant="h6">General options</Typography>
+            <Divider />
+            <FormControlLabel
+                control={
+                <Checkbox 
+                    checked={dynamicMemory}
+                    color="primary"
+                    onChange={(e) => setDynamicMemory(e.target.checked)}
                 />
-            </Tooltip>
+                }
+                label="Dynamic memory"
+            />
             <TextField 
                 label="Max cells"
                 disabled={dynamicMemory} 
@@ -298,6 +290,16 @@ export default function App() {
                 type="number" 
                 variant="outlined"
             />
+            <FormControlLabel
+                    control={
+                    <Checkbox 
+                        checked={promptInput}
+                        color="primary"
+                        onChange={(e) => setPromptInput(e.target.checked)}
+                    />
+                    }
+                    label="Prompt for input"
+                />
             <Typography variant="h6">Editor options</Typography>
             <Divider />
             <FormControlLabel
@@ -334,29 +336,7 @@ export default function App() {
             />
         </Box>)
 
-    const commandsPanel = (
-        <TableContainer component={Paper}>
-            <Table size="small">
-                <TableHead>
-                    <TableRow>
-                        <TableCell>Character</TableCell>
-                        <TableCell align="center">Meaning</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                { commands.map( command => {
-                    return (
-                        <TableRow key={command.character}>
-                            <TableCell component="th" scope="row">{command.character}</TableCell>
-                            <TableCell align="center">{command.meaning}</TableCell>
-                        </TableRow>
-                    )
-                })}
-                </TableBody>
-            </Table>
-        </TableContainer>)
-
-    const views = [editorPanel, commandsPanel, optionsPanel]
+    const views = [editorPanel, <CommandsTable />, optionsPanel]
     const mainView = isSmDevice ? views[renderView] : editorPanel 
 
     return (
@@ -366,14 +346,14 @@ export default function App() {
                 { mainView }  
                 <Box className={classes.sidePanel}>
                     <Tabs indicatorColor="primary" value={sideTab} onChange={ (e, newValue ) => { setSideTab(newValue); } }>
-                            <Tab label="Commands" />
                             <Tab label="Options" />
+                            <Tab label="Commands" />
                     </Tabs>
                     <TabPanel value={sideTab} index={0}>
-                        {commandsPanel}
+                        {optionsPanel}
                     </TabPanel>
                     <TabPanel value={sideTab} index={1}>
-                        {optionsPanel}
+                        <CommandsTable />
                     </TabPanel>
                 </Box>
             </Container>
@@ -386,7 +366,12 @@ export default function App() {
                     <BottomNavigationAction label="Editor" icon={<EditIcon />} />
                     <BottomNavigationAction label="Commands table" icon={<InfoIcon />} />
                     <BottomNavigationAction label="Options" icon={<BuildIcon />} />
-                </BottomNavigation>
+            </BottomNavigation>
+            <InputDialog 
+                open={isInputDialogOpen} 
+                onClose={() => setIsInputDialogOpen(false)}
+                onInputAccept={(value) =>setInput(input.concat(value))}
+            />
         </ThemeProvider>
     )
 }
