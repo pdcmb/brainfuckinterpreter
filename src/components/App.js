@@ -179,6 +179,9 @@ export default function App() {
                    main: '#4caf50',
                 },
             },
+            shape: {
+                borderRadius: 0,
+            },
             overrides: {
                 MuiCssBaseline:{
                     '@global': {
@@ -247,9 +250,9 @@ export default function App() {
                 onChange={(e) => setInput(e.target.value)} 
                 variant="outlined"/>
             <Box className={classes.buttons}>
-                <Button color="primary" variant="outlined" onClick={run}>Run</Button>
-                <Button color="primary" variant="outlined" onClick={() => setOutput('') }>Clear output</Button>
-                <UploadButton color="primary" variant="outlined" accept="text/*" onChange={readFile} >Upload file</UploadButton>
+                <Button color="primary" variant="contained" onClick={run}>Run</Button>
+                <Button color="primary" variant="contained" onClick={() => setOutput('') }>Clear output</Button>
+                <UploadButton color="primary" variant="contained" accept="text/*" onChange={readFile} >Upload file</UploadButton>
             </Box>
             <TextField
                 label="Output"
