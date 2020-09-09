@@ -1,4 +1,4 @@
-# BrainfuckInterpreter
+# BrainfuckInterpreter [![Build Status](https://travis-ci.com/pdcmb/brainfuckinterpreter.svg?branch=master)](https://travis-ci.com/pdcmb/brainfuckinterpreter)
 Simple brainfuck interpreter web application made with React.js and Material-UI
 
 You can try it [here](https://pdcmb.github.io/brainfuckinterpreter/)

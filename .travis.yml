@@ -2,9 +2,15 @@ language: node_js
 node_js:
   - "node"
 
-after_success:
-  - git config --global user.name "pdcmb"
-  - git config --global user.email "pdcmb@users.noreply.github.com"
-  - git remote rm origin
-  - git remote add origin https://pdcmb:${GH_TOKEN}@github.com/pdcmb/brainfuckinterpreter.git
-  - npm run deploy
+install:
+  - npm install
+
+script:
+  - npm run build
+
+deploy:
+  provider: pages
+  github-token: $GH_TOKEN
+  local_dir: build 
+  on:
+    branch: master
