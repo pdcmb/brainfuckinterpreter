@@ -19,6 +19,7 @@ export default function UploadButton(props) {
                 onChange={onChange}
                 id="contained-button-file"
                 type="file"
+                {...rest}
             />
             <label htmlFor="contained-button-file">
                 <Button 
