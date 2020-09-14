@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Container, TextField, FormControlLabel, Checkbox, Box, Button, Switch, Fab,
          Tabs, Tab, Tooltip, BottomNavigation, BottomNavigationAction, Typography, Slider, Divider,
          makeStyles, useMediaQuery } from '@material-ui/core'
@@ -210,21 +210,21 @@ export default function App() {
     const [outputSize, setOutputSize] = useState(8)
     const [isInputDialogOpen, setIsInputDialogOpen] = useState(false)
     
-    const run = () => {
-        if(code !== ''){
-            if(promptInput && code.match(/,/g) && (code.match(/,/g).length - input.length) > 0 )
-                setIsInputDialogOpen(true)
-            else setOutput(evaluate(code, dynamicMemory ? -1 : cellsNumber, input))
-            
-        }
-    }
+    const run = useCallback(() => {
+      if(code !== ''){
+        if(promptInput && code.match(/,/g) && (code.match(/,/g).length - input.length) > 0 )
+            setIsInputDialogOpen(true)
+        else setOutput(evaluate(code, dynamicMemory ? -1 : cellsNumber, input))
+        
+      }
+    },[code, input, cellsNumber, promptInput, dynamicMemory] )
 
     useEffect(() => {
         if(isInputDialogOpen){
             setIsInputDialogOpen(false)
             run()
         }
-    }, [input])
+    }, [input, isInputDialogOpen, run])
 
     const readFile = (event) => {
         let file = event.target.files[0];
