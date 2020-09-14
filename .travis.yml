@@ -11,6 +11,5 @@ script:
 deploy:
   provider: pages
   github-token: $GH_TOKEN
-  local_dir: build 
   on:
     branch: master

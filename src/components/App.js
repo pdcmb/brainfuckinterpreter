@@ -217,7 +217,7 @@ export default function App() {
         else setOutput(evaluate(code, dynamicMemory ? -1 : cellsNumber, input))
         
       }
-    },[code, input, cellsNumber, promptInput, dynamicMemory] )
+    },[code, input, cellsNumber, promptInput, dynamicMemory])
 
     useEffect(() => {
         if(isInputDialogOpen){
