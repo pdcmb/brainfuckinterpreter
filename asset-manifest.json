@@ -1,0 +1,19 @@
+{
+  "files": {
+    "main.js": "/brainfuckinterpreter/static/js/main.813f3c8a.chunk.js",
+    "main.js.map": "/brainfuckinterpreter/static/js/main.813f3c8a.chunk.js.map",
+    "runtime-main.js": "/brainfuckinterpreter/static/js/runtime-main.d34b9bf1.js",
+    "runtime-main.js.map": "/brainfuckinterpreter/static/js/runtime-main.d34b9bf1.js.map",
+    "static/js/2.ed9602b8.chunk.js": "/brainfuckinterpreter/static/js/2.ed9602b8.chunk.js",
+    "static/js/2.ed9602b8.chunk.js.map": "/brainfuckinterpreter/static/js/2.ed9602b8.chunk.js.map",
+    "index.html": "/brainfuckinterpreter/index.html",
+    "precache-manifest.848007363179e3d001b67f4d1b91229f.js": "/brainfuckinterpreter/precache-manifest.848007363179e3d001b67f4d1b91229f.js",
+    "service-worker.js": "/brainfuckinterpreter/service-worker.js",
+    "static/js/2.ed9602b8.chunk.js.LICENSE.txt": "/brainfuckinterpreter/static/js/2.ed9602b8.chunk.js.LICENSE.txt"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.d34b9bf1.js",
+    "static/js/2.ed9602b8.chunk.js",
+    "static/js/main.813f3c8a.chunk.js"
+  ]
+}
